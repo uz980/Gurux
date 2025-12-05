@@ -77,7 +77,7 @@ print("Server javobi:", server_msg)
 
 #  Agar server OK demasa  o‘zini va ID faylni o‘chiradi
 if server_msg != "OK":
-    print("\n Ruxsat yo‘q! Kod va fayl o‘chirildi.")
+    print("\n Ruxsat yo‘q! Kod va fayl o‘chirildi. @termux_os")
 
     # ID faylni o'chiramiz
     try:
